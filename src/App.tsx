@@ -1,56 +1,97 @@
-import {
-  Box,
-  Button,
-  ButtonGroup,
-  Container,
-  Paper,
-  Typography,
-} from '@mui/material'
-import { useAppDispatch, useAppSelector } from './store/hooks'
-import { decrement, increment, reset } from './store/counterSlice'
+import { Box, Button, Container, Typography } from "@mui/material";
+import type { Player } from "./types/players";
+import { newPlayer } from "./utils/newPlayer";
+import PlayerColumn from "./components/PlayerColumn";
+import useLocalStorage from "./hooks/useLocalStorage";
 
 function App() {
-  const count = useAppSelector((state) => state.counter.value)
-  const dispatch = useAppDispatch()
+  const { players, setValue, setKeypathValue, deletePlayer } = useLocalStorage<
+    Player[]
+  >("players", []);
+
+  function onRandomize() {
+    const newPlayers = [...(players ?? [])];
+    for (let i = 0; i < players.length; i++) {
+      const randomPrimaryWeapon =
+        players[i].primary_weapons_unlocked?.[
+          Math.floor(
+            Math.random() * (players[i].primary_weapons_unlocked?.length ?? 1),
+          )
+        ] ?? players[i].primary_weapon;
+      const randomSecondaryWeapon =
+        players[i].secondary_weapons_unlocked?.[
+          Math.floor(
+            Math.random() *
+              (players[i].secondary_weapons_unlocked?.length ?? 1),
+          )
+        ] ?? players[i].secondary_weapon;
+      const randomGrenade =
+        players[i].grenades_unlocked?.[
+          Math.floor(
+            Math.random() * (players[i].grenades_unlocked?.length ?? 1),
+          )
+        ] ?? players[i].grenade;
+
+      newPlayers[i].primary_weapon = randomPrimaryWeapon;
+      newPlayers[i].secondary_weapon = randomSecondaryWeapon;
+      newPlayers[i].grenade = randomGrenade;
+      setValue(newPlayers);
+    }
+  }
 
   return (
-    <Container maxWidth="sm">
+    <Container maxWidth="xl">
       <Box
         sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
           gap: 4,
         }}
       >
-        <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+        <Typography variant="h3" sx={{ fontWeight: "bold" }}>
           Far Far West Loadouts
         </Typography>
-
-        <Paper elevation={4} sx={{ p: 4, textAlign: 'center', width: '100%' }}>
-          <Typography variant="h6" gutterBottom color="text.secondary">
-            Redux Counter Demo
-          </Typography>
-          <Typography variant="h2" component="p" sx={{ my: 2 }}>
-            {count}
-          </Typography>
-          <ButtonGroup variant="contained" size="large">
-            <Button onClick={() => dispatch(decrement())}>−</Button>
-            <Button onClick={() => dispatch(reset())} color="secondary">
-              Reset
-            </Button>
-            <Button onClick={() => dispatch(increment())}>+</Button>
-          </ButtonGroup>
-        </Paper>
-
-        <Typography variant="body2" color="text.secondary">
-          Built with Vite · React · TypeScript · MUI · Redux Toolkit
-        </Typography>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${(players ?? []).length}, minmax(0px, 400px))`,
+            gap: 2,
+            mx: "auto",
+          }}
+        >
+          {(players ?? []).map((player: Player, index: number) => (
+            <PlayerColumn
+              key={player.id}
+              player={player}
+              setValue={setKeypathValue}
+              index={index}
+              deletePlayer={deletePlayer}
+              last={index === (players ?? []).length - 1}
+            />
+          ))}
+        </Box>
+        {(players ?? []).length < 4 && (
+          <Button
+            variant="contained"
+            onClick={() => setValue([...(players ?? []), newPlayer()])}
+          >
+            Add Player
+          </Button>
+        )}
+        <Button
+          fullWidth
+          variant="contained"
+          color="secondary"
+          onClick={onRandomize}
+        >
+          Randomize Loadouts
+        </Button>
       </Box>
     </Container>
-  )
+  );
 }
 
-export default App
+export default App;
